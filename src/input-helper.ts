@@ -104,7 +104,7 @@ async function getMessages(
   core.debug(` - eventName: ${github.context.eventName}`);
 
   switch (github.context.eventName) {
-    case "pull_request_target":
+    /*case "pull_request_target":
     case "pull_request": {
       if (!github.context.payload) {
         throw new Error("No payload found in the context.");
@@ -186,8 +186,8 @@ async function getMessages(
       }
 
       break;
-    }
-    case "push": {
+    }*/
+    case "pull_request": {
       if (!github.context.payload) {
         throw new Error("No payload found in the context.");
       }
@@ -200,9 +200,10 @@ async function getMessages(
         break;
       }
 
-      for (const i in github.context.payload.commits) {
-        if (github.context.payload.commits[i].message) {
-          messages.push(github.context.payload.commits[i].message);
+      for (let b = github.context.payload.commits.length; b > 0; b--) {
+        if (github.context.payload.commits[b].message) {
+          messages.push(github.context.payload.commits[b].message);
+          break;
         }
       }
 
