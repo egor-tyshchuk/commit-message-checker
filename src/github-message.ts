@@ -14,7 +14,7 @@ const REACTIONS = [
   "rocket",
   "eyes",
 ] as const;
-type Reaction = typeof REACTIONS[number];
+type Reaction = (typeof REACTIONS)[number];
 
 export class GithubMessage {
   private github_token: string = core.getInput("accessToken");

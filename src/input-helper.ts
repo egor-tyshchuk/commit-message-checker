@@ -187,22 +187,54 @@ async function getMessages(
 
       break;
     }*/
+    case "pull_request_target":
     case "pull_request": {
       if (!github.context.payload) {
         throw new Error("No payload found in the context.");
       }
 
-      if (
-        !github.context.payload.commits ||
-        !github.context.payload.commits.length
-      ) {
-        core.debug(" - skipping commits");
-        break;
+      if (!github.context.payload.pull_request) {
+        throw new Error("No pull_request found in the payload.");
       }
 
-      for (let b = github.context.payload.commits.length; b > 0; b--) {
-        if (github.context.payload.commits[b].message) {
-          messages.push(github.context.payload.commits[b].message);
+      // Handle pull request commits
+      if (!pullRequestOptions.accessToken) {
+        throw new Error(
+          "The `checkAllCommitMessages` option requires a github access token."
+        );
+      }
+
+      if (!github.context.payload.pull_request.number) {
+        throw new Error("No number found in the pull_request.");
+      }
+
+      if (!github.context.payload.repository) {
+        throw new Error("No repository found in the payload.");
+      }
+
+      if (!github.context.payload.repository.name) {
+        throw new Error("No name found in the repository.");
+      }
+
+      if (
+        !github.context.payload.repository.owner ||
+        (!github.context.payload.repository.owner.login &&
+          !github.context.payload.repository.owner.name)
+      ) {
+        throw new Error("No owner found in the repository.");
+      }
+
+      const commitMessages = await getCommitMessagesFromPullRequest(
+        pullRequestOptions.accessToken,
+        github.context.payload.repository.owner.name ??
+          github.context.payload.repository.owner.login,
+        github.context.payload.repository.name,
+        github.context.payload.pull_request.number
+      );
+
+      for (let b = commitMessages.length; b > 0; b--) {
+        if (commitMessages[b]) {
+          messages.push(commitMessages[b]);
           break;
         }
       }

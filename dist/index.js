@@ -254,7 +254,7 @@ class GithubMessage {
     }
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     findComment() {
-        var e_1, _a;
+        var _a, e_1, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.issue_number) {
                 core.setFailed("No issue/pull request in input neither in current context.");
@@ -263,17 +263,24 @@ class GithubMessage {
             const listComments = this.octokit.rest.issues.listComments;
             let comment;
             try {
-                for (var _b = __asyncValues(this.octokit.paginate.iterator(listComments, Object.assign(Object.assign({}, this.context.repo), { issue_number: this.issue_number }))), _c; _c = yield _b.next(), !_c.done;) {
-                    const { data: comments } = _c.value;
-                    comment = comments.find((nextComment) => { var _a; return (_a = nextComment === null || nextComment === void 0 ? void 0 : nextComment.body) === null || _a === void 0 ? void 0 : _a.includes(this.comment_tag_pattern); });
-                    if (comment)
-                        break;
+                for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(listComments, Object.assign(Object.assign({}, this.context.repo), { issue_number: this.issue_number }))), _f; _f = yield _e.next(), _a = _f.done, !_a;) {
+                    _c = _f.value;
+                    _d = false;
+                    try {
+                        const { data: comments } = _c;
+                        comment = comments.find((nextComment) => { var _a; return (_a = nextComment === null || nextComment === void 0 ? void 0 : nextComment.body) === null || _a === void 0 ? void 0 : _a.includes(this.comment_tag_pattern); });
+                        if (comment)
+                            break;
+                    }
+                    finally {
+                        _d = true;
+                    }
                 }
             }
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
             finally {
                 try {
-                    if (_c && !_c.done && (_a = _b.return)) yield _a.call(_b);
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
                 finally { if (e_1) throw e_1.error; }
             }
@@ -416,6 +423,89 @@ function getMessages(pullRequestOptions) {
         const messages = [];
         core.debug(` - eventName: ${github.context.eventName}`);
         switch (github.context.eventName) {
+            /*case "pull_request_target":
+            case "pull_request": {
+              if (!github.context.payload) {
+                throw new Error("No payload found in the context.");
+              }
+        
+              if (!github.context.payload.pull_request) {
+                throw new Error("No pull_request found in the payload.");
+              }
+        
+              let message = "";
+        
+              // Handle pull request title and body
+              if (!pullRequestOptions.ignoreTitle) {
+                if (!github.context.payload.pull_request.title) {
+                  throw new Error("No title found in the pull_request.");
+                }
+        
+                message += github.context.payload.pull_request.title;
+              } else {
+                core.debug(" - skipping title");
+              }
+        
+              if (!pullRequestOptions.ignoreDescription) {
+                if (github.context.payload.pull_request.body) {
+                  message = message.concat(
+                    message !== "" ? "\n\n" : "",
+                    github.context.payload.pull_request.body
+                  );
+                }
+              } else {
+                core.debug(" - skipping description");
+              }
+        
+              if (message) {
+                messages.push(message);
+              }
+        
+              // Handle pull request commits
+              if (pullRequestOptions.checkAllCommitMessages) {
+                if (!pullRequestOptions.accessToken) {
+                  throw new Error(
+                    "The `checkAllCommitMessages` option requires a github access token."
+                  );
+                }
+        
+                if (!github.context.payload.pull_request.number) {
+                  throw new Error("No number found in the pull_request.");
+                }
+        
+                if (!github.context.payload.repository) {
+                  throw new Error("No repository found in the payload.");
+                }
+        
+                if (!github.context.payload.repository.name) {
+                  throw new Error("No name found in the repository.");
+                }
+        
+                if (
+                  !github.context.payload.repository.owner ||
+                  (!github.context.payload.repository.owner.login &&
+                    !github.context.payload.repository.owner.name)
+                ) {
+                  throw new Error("No owner found in the repository.");
+                }
+        
+                const commitMessages = await getCommitMessagesFromPullRequest(
+                  pullRequestOptions.accessToken,
+                  github.context.payload.repository.owner.name ??
+                    github.context.payload.repository.owner.login,
+                  github.context.payload.repository.name,
+                  github.context.payload.pull_request.number
+                );
+        
+                for (message of commitMessages) {
+                  if (message) {
+                    messages.push(message);
+                  }
+                }
+              }
+        
+              break;
+            }*/
             case "pull_request_target":
             case "pull_request": {
                 if (!github.context.payload) {
@@ -424,68 +514,29 @@ function getMessages(pullRequestOptions) {
                 if (!github.context.payload.pull_request) {
                     throw new Error("No pull_request found in the payload.");
                 }
-                let message = "";
-                // Handle pull request title and body
-                if (!pullRequestOptions.ignoreTitle) {
-                    if (!github.context.payload.pull_request.title) {
-                        throw new Error("No title found in the pull_request.");
-                    }
-                    message += github.context.payload.pull_request.title;
-                }
-                else {
-                    core.debug(" - skipping title");
-                }
-                if (!pullRequestOptions.ignoreDescription) {
-                    if (github.context.payload.pull_request.body) {
-                        message = message.concat(message !== "" ? "\n\n" : "", github.context.payload.pull_request.body);
-                    }
-                }
-                else {
-                    core.debug(" - skipping description");
-                }
-                if (message) {
-                    messages.push(message);
-                }
                 // Handle pull request commits
-                if (pullRequestOptions.checkAllCommitMessages) {
-                    if (!pullRequestOptions.accessToken) {
-                        throw new Error("The `checkAllCommitMessages` option requires a github access token.");
-                    }
-                    if (!github.context.payload.pull_request.number) {
-                        throw new Error("No number found in the pull_request.");
-                    }
-                    if (!github.context.payload.repository) {
-                        throw new Error("No repository found in the payload.");
-                    }
-                    if (!github.context.payload.repository.name) {
-                        throw new Error("No name found in the repository.");
-                    }
-                    if (!github.context.payload.repository.owner ||
-                        (!github.context.payload.repository.owner.login &&
-                            !github.context.payload.repository.owner.name)) {
-                        throw new Error("No owner found in the repository.");
-                    }
-                    const commitMessages = yield getCommitMessagesFromPullRequest(pullRequestOptions.accessToken, (_a = github.context.payload.repository.owner.name) !== null && _a !== void 0 ? _a : github.context.payload.repository.owner.login, github.context.payload.repository.name, github.context.payload.pull_request.number);
-                    for (message of commitMessages) {
-                        if (message) {
-                            messages.push(message);
-                        }
-                    }
+                if (!pullRequestOptions.accessToken) {
+                    throw new Error("The `checkAllCommitMessages` option requires a github access token.");
                 }
-                break;
-            }
-            case "push": {
-                if (!github.context.payload) {
-                    throw new Error("No payload found in the context.");
+                if (!github.context.payload.pull_request.number) {
+                    throw new Error("No number found in the pull_request.");
                 }
-                if (!github.context.payload.commits ||
-                    !github.context.payload.commits.length) {
-                    core.debug(" - skipping commits");
-                    break;
+                if (!github.context.payload.repository) {
+                    throw new Error("No repository found in the payload.");
                 }
-                for (const i in github.context.payload.commits) {
-                    if (github.context.payload.commits[i].message) {
-                        messages.push(github.context.payload.commits[i].message);
+                if (!github.context.payload.repository.name) {
+                    throw new Error("No name found in the repository.");
+                }
+                if (!github.context.payload.repository.owner ||
+                    (!github.context.payload.repository.owner.login &&
+                        !github.context.payload.repository.owner.name)) {
+                    throw new Error("No owner found in the repository.");
+                }
+                const commitMessages = yield getCommitMessagesFromPullRequest(pullRequestOptions.accessToken, (_a = github.context.payload.repository.owner.name) !== null && _a !== void 0 ? _a : github.context.payload.repository.owner.login, github.context.payload.repository.name, github.context.payload.pull_request.number);
+                for (let b = commitMessages.length; b > 0; b--) {
+                    if (commitMessages[b]) {
+                        messages.push(commitMessages[b]);
+                        break;
                     }
                 }
                 break;
